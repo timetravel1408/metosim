@@ -1,0 +1,57 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "metosim"
+version = "1.0.0-dev"
+description = "MetoSim — Cloud-native meta-optics simulation platform"
+readme = "README.md"
+license = {text = "Proprietary"}
+requires-python = ">=3.9,<3.13"
+authors = [
+    {name = "Dr. Abhishek Kumar", email = "abhishek@metosim.io"},
+    {name = "Kishan", email = "kishan@metosim.io"},
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Physics",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+
+[tool.black]
+line-length = 88
+target-version = ["py39", "py310", "py311", "py312"]
+
+[tool.isort]
+profile = "black"
+line_length = 88
+
+[tool.mypy]
+python_version = "3.9"
+strict = true
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+
+[tool.ruff]
+line-length = 88
+target-version = "py39"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM"]
+
+[tool.pytest.ini_options]
+testpaths = ["sdk/tests", "api/tests", "engine/tests"]
+asyncio_mode = "auto"
+markers = [
+    "unit: Unit tests (no I/O)",
+    "integration: Integration tests (requires services)",
+    "physics: Physics benchmark tests",
+    "slow: Slow tests (GPU required)",
+]

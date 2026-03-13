@@ -1,0 +1,920 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MetoSim — Meta-Optics Simulation Platform</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Instrument+Serif:ital@0;1&family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #06080d;
+    --bg-elevated: #0c1018;
+    --bg-card: #111824;
+    --surface: #1a2332;
+    --border: #1e2a3a;
+    --border-glow: #2a4a6b;
+    --text: #e8edf5;
+    --text-muted: #7a8ba0;
+    --text-dim: #4a5b6e;
+    --accent: #00d4ff;
+    --accent-deep: #0088cc;
+    --accent-glow: rgba(0, 212, 255, 0.15);
+    --warm: #ff6b35;
+    --warm-glow: rgba(255, 107, 53, 0.12);
+    --green: #00e88f;
+    --violet: #8b5cf6;
+    --violet-glow: rgba(139, 92, 246, 0.12);
+    --font-display: 'Instrument Serif', serif;
+    --font-body: 'DM Mono', monospace;
+    --font-code: 'JetBrains Mono', monospace;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: var(--font-body);
+    background: var(--bg);
+    color: var(--text);
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── Noise overlay ── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  /* ── Grid background ── */
+  .grid-bg {
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+    background-size: 60px 60px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ── Navigation ── */
+  nav {
+    position: fixed;
+    top: 0;
+    width: 100%;
+    z-index: 100;
+    padding: 1.2rem 3rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    backdrop-filter: blur(20px);
+    background: rgba(6, 8, 13, 0.8);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .logo {
+    font-family: var(--font-display);
+    font-size: 1.6rem;
+    color: var(--text);
+    text-decoration: none;
+    letter-spacing: -0.02em;
+  }
+
+  .logo span { color: var(--accent); }
+
+  .nav-links {
+    display: flex;
+    gap: 2.5rem;
+    list-style: none;
+  }
+
+  .nav-links a {
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 0.75rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    transition: color 0.3s;
+  }
+
+  .nav-links a:hover { color: var(--accent); }
+
+  .btn-nav {
+    padding: 0.5rem 1.4rem;
+    background: transparent;
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    font-family: var(--font-body);
+    font-size: 0.75rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.3s;
+    text-decoration: none;
+  }
+
+  .btn-nav:hover {
+    background: var(--accent);
+    color: var(--bg);
+  }
+
+  /* ── Hero ── */
+  .hero {
+    position: relative;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 8rem 3rem 4rem;
+    text-align: center;
+    z-index: 1;
+  }
+
+  .hero-orb {
+    position: absolute;
+    width: 600px;
+    height: 600px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(0,212,255,0.08) 0%, rgba(139,92,246,0.04) 40%, transparent 70%);
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -55%);
+    filter: blur(80px);
+    animation: orb-pulse 8s ease-in-out infinite;
+    pointer-events: none;
+  }
+
+  @keyframes orb-pulse {
+    0%, 100% { opacity: 0.6; transform: translate(-50%, -55%) scale(1); }
+    50% { opacity: 1; transform: translate(-50%, -55%) scale(1.1); }
+  }
+
+  .hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.45rem 1.2rem;
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 2.5rem;
+    animation: fade-up 1s ease-out;
+  }
+
+  .hero-badge .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--green);
+    animation: blink 2s infinite;
+  }
+
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  .hero h1 {
+    font-family: var(--font-display);
+    font-size: clamp(3.2rem, 8vw, 7rem);
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+    margin-bottom: 1.8rem;
+    animation: fade-up 1s ease-out 0.15s both;
+  }
+
+  .hero h1 em {
+    font-style: italic;
+    background: linear-gradient(135deg, var(--accent), var(--violet));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .hero-sub {
+    font-size: 1rem;
+    color: var(--text-muted);
+    max-width: 580px;
+    line-height: 1.7;
+    margin-bottom: 3rem;
+    font-weight: 300;
+    animation: fade-up 1s ease-out 0.3s both;
+  }
+
+  .hero-actions {
+    display: flex;
+    gap: 1rem;
+    animation: fade-up 1s ease-out 0.45s both;
+  }
+
+  .btn-primary {
+    padding: 0.85rem 2.4rem;
+    background: var(--accent);
+    color: var(--bg);
+    border: none;
+    font-family: var(--font-body);
+    font-size: 0.8rem;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    transition: all 0.3s;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .btn-primary:hover {
+    background: #33ddff;
+    box-shadow: 0 0 30px rgba(0,212,255,0.3);
+    transform: translateY(-1px);
+  }
+
+  .btn-secondary {
+    padding: 0.85rem 2.4rem;
+    background: transparent;
+    color: var(--text);
+    border: 1px solid var(--border);
+    font-family: var(--font-body);
+    font-size: 0.8rem;
+    font-weight: 400;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    transition: all 0.3s;
+    text-decoration: none;
+  }
+
+  .btn-secondary:hover {
+    border-color: var(--text-muted);
+    background: rgba(255,255,255,0.03);
+  }
+
+  .hero-code {
+    margin-top: 4rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 2rem 2.5rem;
+    text-align: left;
+    max-width: 620px;
+    width: 100%;
+    animation: fade-up 1s ease-out 0.6s both;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero-code::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    opacity: 0.5;
+  }
+
+  .hero-code .window-dots {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 1.2rem;
+  }
+
+  .hero-code .window-dots span {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--surface);
+  }
+
+  .hero-code pre {
+    font-family: var(--font-code);
+    font-size: 0.82rem;
+    line-height: 1.7;
+    color: var(--text-muted);
+  }
+
+  .hero-code .kw { color: var(--violet); }
+  .hero-code .fn { color: var(--accent); }
+  .hero-code .str { color: var(--green); }
+  .hero-code .cm { color: var(--text-dim); }
+  .hero-code .var { color: var(--warm); }
+
+  @keyframes fade-up {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── Section common ── */
+  section {
+    position: relative;
+    z-index: 1;
+    padding: 8rem 3rem;
+  }
+
+  .section-label {
+    font-size: 0.65rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 1.2rem;
+    font-weight: 500;
+  }
+
+  .section-title {
+    font-family: var(--font-display);
+    font-size: clamp(2rem, 4vw, 3.4rem);
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+    margin-bottom: 1.2rem;
+  }
+
+  .section-desc {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    line-height: 1.7;
+    max-width: 560px;
+    font-weight: 300;
+  }
+
+  /* ── Pipeline ── */
+  .pipeline {
+    background: var(--bg-elevated);
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .pipeline-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0;
+    max-width: 1100px;
+    margin: 3rem auto 0;
+  }
+
+  .pipeline-card {
+    padding: 2.5rem;
+    border: 1px solid var(--border);
+    position: relative;
+    transition: all 0.4s;
+  }
+
+  .pipeline-card:hover {
+    background: var(--bg-card);
+    border-color: var(--border-glow);
+  }
+
+  .pipeline-card .step-num {
+    font-size: 0.6rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 1.5rem;
+  }
+
+  .pipeline-card h3 {
+    font-family: var(--font-display);
+    font-size: 1.8rem;
+    margin-bottom: 0.6rem;
+  }
+
+  .pipeline-card .card-accent {
+    display: inline-block;
+    font-size: 0.65rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 0.25rem 0.7rem;
+    border: 1px solid;
+    margin-bottom: 1rem;
+  }
+
+  .pipeline-card:nth-child(1) .card-accent { color: var(--accent); border-color: var(--accent); }
+  .pipeline-card:nth-child(2) .card-accent { color: var(--warm); border-color: var(--warm); }
+  .pipeline-card:nth-child(3) .card-accent { color: var(--green); border-color: var(--green); }
+
+  .pipeline-card p {
+    color: var(--text-muted);
+    font-size: 0.82rem;
+    line-height: 1.65;
+    font-weight: 300;
+  }
+
+  .pipeline-arrow {
+    display: none;
+  }
+
+  /* ── Features ── */
+  .features { max-width: 1200px; margin: 0 auto; }
+
+  .features-header {
+    margin-bottom: 4rem;
+  }
+
+  .feature-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+  }
+
+  .feature-cell {
+    background: var(--bg);
+    padding: 2.5rem;
+    transition: background 0.3s;
+  }
+
+  .feature-cell:hover {
+    background: var(--bg-elevated);
+  }
+
+  .feature-icon {
+    width: 36px;
+    height: 36px;
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1.2rem;
+    font-size: 1rem;
+  }
+
+  .feature-cell h4 {
+    font-family: var(--font-display);
+    font-size: 1.2rem;
+    margin-bottom: 0.6rem;
+  }
+
+  .feature-cell p {
+    color: var(--text-muted);
+    font-size: 0.78rem;
+    line-height: 1.6;
+    font-weight: 300;
+  }
+
+  /* ── Architecture ── */
+  .arch {
+    background: var(--bg-elevated);
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .arch-content {
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  .arch-diagram {
+    margin-top: 3rem;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    padding: 3rem;
+    font-family: var(--font-code);
+    font-size: 0.78rem;
+    line-height: 2.2;
+    color: var(--text-muted);
+    position: relative;
+    overflow-x: auto;
+  }
+
+  .arch-diagram .layer {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.5rem 0;
+  }
+
+  .arch-diagram .layer-label {
+    width: 140px;
+    font-size: 0.65rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  .arch-diagram .layer-box {
+    padding: 0.6rem 1.4rem;
+    border: 1px solid var(--border);
+    background: var(--bg-card);
+    transition: all 0.3s;
+  }
+
+  .arch-diagram .layer-box:hover {
+    border-color: var(--accent);
+    box-shadow: 0 0 15px var(--accent-glow);
+  }
+
+  .arch-diagram .layer-box.accent { border-color: var(--accent); color: var(--accent); }
+  .arch-diagram .layer-box.warm { border-color: var(--warm); color: var(--warm); }
+  .arch-diagram .layer-box.green { border-color: var(--green); color: var(--green); }
+  .arch-diagram .layer-box.violet { border-color: var(--violet); color: var(--violet); }
+
+  .arch-diagram .connector {
+    padding: 0.3rem 0;
+    padding-left: 156px;
+    color: var(--text-dim);
+    font-size: 0.7rem;
+  }
+
+  /* ── Roadmap ── */
+  .roadmap { max-width: 1100px; margin: 0 auto; }
+
+  .roadmap-track {
+    margin-top: 3.5rem;
+    position: relative;
+  }
+
+  .roadmap-track::before {
+    content: '';
+    position: absolute;
+    left: 20px;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background: linear-gradient(to bottom, var(--accent), var(--violet), var(--warm), var(--green));
+  }
+
+  .roadmap-item {
+    display: flex;
+    gap: 2.5rem;
+    padding: 2rem 0;
+    position: relative;
+  }
+
+  .roadmap-dot {
+    width: 40px;
+    height: 40px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    font-size: 0.7rem;
+    font-weight: 500;
+    z-index: 1;
+  }
+
+  .roadmap-item:nth-child(1) .roadmap-dot { border-color: var(--accent); color: var(--accent); }
+  .roadmap-item:nth-child(2) .roadmap-dot { border-color: var(--violet); color: var(--violet); }
+  .roadmap-item:nth-child(3) .roadmap-dot { border-color: var(--warm); color: var(--warm); }
+  .roadmap-item:nth-child(4) .roadmap-dot { border-color: var(--green); color: var(--green); }
+
+  .roadmap-body h4 {
+    font-family: var(--font-display);
+    font-size: 1.4rem;
+    margin-bottom: 0.3rem;
+  }
+
+  .roadmap-body .version-tag {
+    font-size: 0.65rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 0.8rem;
+  }
+
+  .roadmap-body p {
+    color: var(--text-muted);
+    font-size: 0.82rem;
+    line-height: 1.6;
+    font-weight: 300;
+    max-width: 500px;
+  }
+
+  /* ── CTA ── */
+  .cta {
+    text-align: center;
+    padding: 10rem 3rem;
+    position: relative;
+  }
+
+  .cta-orb {
+    position: absolute;
+    width: 500px;
+    height: 500px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(139,92,246,0.08) 0%, rgba(0,212,255,0.04) 40%, transparent 70%);
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    filter: blur(80px);
+    pointer-events: none;
+  }
+
+  .cta h2 {
+    font-family: var(--font-display);
+    font-size: clamp(2.4rem, 5vw, 4rem);
+    letter-spacing: -0.02em;
+    margin-bottom: 1.2rem;
+    position: relative;
+  }
+
+  .cta p {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    line-height: 1.7;
+    max-width: 480px;
+    margin: 0 auto 2.5rem;
+    font-weight: 300;
+    position: relative;
+  }
+
+  .cta .hero-actions { justify-content: center; position: relative; }
+
+  /* ── Footer ── */
+  footer {
+    position: relative;
+    z-index: 1;
+    border-top: 1px solid var(--border);
+    padding: 3rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: var(--text-dim);
+    font-size: 0.72rem;
+  }
+
+  footer a {
+    color: var(--text-muted);
+    text-decoration: none;
+    transition: color 0.3s;
+  }
+
+  footer a:hover { color: var(--accent); }
+
+  .footer-links { display: flex; gap: 2rem; }
+
+  /* ── Responsive ── */
+  @media (max-width: 768px) {
+    nav { padding: 1rem 1.5rem; }
+    .nav-links { display: none; }
+    section { padding: 5rem 1.5rem; }
+    .pipeline-grid { grid-template-columns: 1fr; }
+    .feature-grid { grid-template-columns: 1fr; }
+    .hero-actions { flex-direction: column; align-items: center; }
+    .arch-diagram .layer { flex-direction: column; align-items: flex-start; }
+    .arch-diagram .layer-label { text-align: left; width: auto; }
+    .arch-diagram .connector { padding-left: 0; }
+    footer { flex-direction: column; gap: 1rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="grid-bg"></div>
+
+<nav>
+  <a href="#" class="logo">Meto<span>Sim</span></a>
+  <ul class="nav-links">
+    <li><a href="#platform">Platform</a></li>
+    <li><a href="#features">Features</a></li>
+    <li><a href="#architecture">Architecture</a></li>
+    <li><a href="#roadmap">Roadmap</a></li>
+    <li><a href="https://docs.metosim.io" target="_blank">Docs</a></li>
+  </ul>
+  <a href="#get-started" class="btn-nav">Get API Key</a>
+</nav>
+
+<!-- ═══════ HERO ═══════ -->
+<section class="hero">
+  <div class="hero-orb"></div>
+  <div class="hero-badge">
+    <span class="dot"></span>
+    V1 MVP — Now in development
+  </div>
+  <h1>Simulate light<br>at the <em>nanoscale</em></h1>
+  <p class="hero-sub">
+    Cloud-native electromagnetic simulation for metasurfaces,
+    photonic crystals, and nano-optical devices. Python SDK.
+    GPU-accelerated. Publication-ready results.
+  </p>
+  <div class="hero-actions">
+    <a href="#get-started" class="btn-primary">pip install metosim →</a>
+    <a href="#architecture" class="btn-secondary">View Architecture</a>
+  </div>
+  <div class="hero-code">
+    <div class="window-dots"><span></span><span></span><span></span></div>
+<pre><span class="kw">import</span> metosim
+
+<span class="cm"># Configure your simulation</span>
+<span class="var">sim</span> = metosim.<span class="fn">Simulation</span>(
+    solver=<span class="str">"fdtd"</span>,
+    wavelength=<span class="str">1.55e-6</span>,          <span class="cm"># telecom C-band</span>
+    materials=[<span class="str">"Si"</span>, <span class="str">"SiO2"</span>],
+    geometry=my_metasurface,
+)
+
+<span class="cm"># Submit to cloud GPU → get HDF5 results</span>
+<span class="var">job</span> = client.<span class="fn">run</span>(sim)
+<span class="var">results</span> = job.<span class="fn">results</span>()
+metosim.<span class="fn">plot_field</span>(results, component=<span class="str">"Ez"</span>)</pre>
+  </div>
+</section>
+
+<!-- ═══════ PIPELINE ═══════ -->
+<section class="pipeline" id="platform">
+  <div style="max-width: 1100px; margin: 0 auto;">
+    <p class="section-label">The Meto Platform</p>
+    <h2 class="section-title">From simulation to fabrication</h2>
+    <p class="section-desc">
+      Three integrated tools spanning the full meta-optics development
+      lifecycle — design, manufacture, and validate.
+    </p>
+  </div>
+  <div class="pipeline-grid">
+    <div class="pipeline-card">
+      <div class="step-num">01 — Simulate</div>
+      <span class="card-accent">MetoSim</span>
+      <h3>Computational Design</h3>
+      <p>
+        FDTD, RCWA, and FEM solvers for electromagnetic wave propagation
+        in nanostructures. Cloud GPUs handle the heavy compute while you
+        work in Python.
+      </p>
+    </div>
+    <div class="pipeline-card">
+      <div class="step-num">02 — Fabricate</div>
+      <span class="card-accent">MetoFab</span>
+      <h3>Nanofabrication</h3>
+      <p>
+        Structured configs feed directly into fabrication workflows.
+        Seamless handoff from simulation geometry to process-ready
+        specifications.
+      </p>
+    </div>
+    <div class="pipeline-card">
+      <div class="step-num">03 — Validate</div>
+      <span class="card-accent">MetoLab</span>
+      <h3>Experimental Testing</h3>
+      <p>
+        Close the loop between computation and experiment. Compare
+        simulated and measured optical responses in a unified data
+        environment.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════ FEATURES ═══════ -->
+<section id="features">
+  <div class="features">
+    <div class="features-header">
+      <p class="section-label">Core Capabilities</p>
+      <h2 class="section-title">Built for nanophotonics research</h2>
+      <p class="section-desc">
+        Everything a researcher needs to go from device concept
+        to publication-quality simulation results.
+      </p>
+    </div>
+    <div class="feature-grid">
+      <div class="feature-cell">
+        <div class="feature-icon">⚡</div>
+        <h4>GPU-Accelerated FDTD</h4>
+        <p>Full-wave electromagnetic solver running on cloud B200/A100 GPUs. Submit from Python, get results in minutes not hours.</p>
+      </div>
+      <div class="feature-cell">
+        <div class="feature-icon">🔬</div>
+        <h4>Material Library</h4>
+        <p>Built-in permittivity data for Si, SiO2, TiO2, Au, Al and more at telecom wavelengths. Extensible with custom materials.</p>
+      </div>
+      <div class="feature-cell">
+        <div class="feature-icon">📐</div>
+        <h4>Pydantic Configs</h4>
+        <p>Type-safe simulation configurations validated before submission. Catch errors locally, not after waiting for a GPU.</p>
+      </div>
+      <div class="feature-cell">
+        <div class="feature-icon">☁️</div>
+        <h4>Cloud-Native</h4>
+        <p>No local GPU needed. Simulations execute remotely on managed infrastructure. Pay only for compute time.</p>
+      </div>
+      <div class="feature-cell">
+        <div class="feature-icon">📊</div>
+        <h4>HDF5 Results</h4>
+        <p>Structured, checksummed output files with full metadata. Reproducible, shareable, and ready for downstream analysis.</p>
+      </div>
+      <div class="feature-cell">
+        <div class="feature-icon">🐍</div>
+        <h4>Python-First SDK</h4>
+        <p>Clean, Pythonic API designed for Jupyter workflows. Three lines to submit a simulation; one to visualize.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════ ARCHITECTURE ═══════ -->
+<section class="arch" id="architecture">
+  <div class="arch-content">
+    <p class="section-label">System Design</p>
+    <h2 class="section-title">Hybrid async architecture</h2>
+    <p class="section-desc">
+      FastAPI gateway with Redis task queue and Modal GPU workers.
+      Independent scaling of API and compute layers.
+    </p>
+    <div class="arch-diagram">
+      <div class="layer">
+        <span class="layer-label">Client</span>
+        <span class="layer-box accent">Python SDK (metosim)</span>
+      </div>
+      <div class="connector">│ HTTPS + API Key Auth</div>
+      <div class="layer">
+        <span class="layer-label">Gateway</span>
+        <span class="layer-box violet">FastAPI REST API</span>
+        <span class="layer-box" style="margin-left: 0.5rem;">PostgreSQL</span>
+      </div>
+      <div class="connector">│ Redis Task Queue</div>
+      <div class="layer">
+        <span class="layer-label">Compute</span>
+        <span class="layer-box warm">FDTD Engine (GPU)</span>
+        <span class="layer-box" style="margin-left: 0.5rem;">Mesh + Materials</span>
+      </div>
+      <div class="connector">│ Upload Results</div>
+      <div class="layer">
+        <span class="layer-label">Storage</span>
+        <span class="layer-box green">S3 Object Store (HDF5)</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════ ROADMAP ═══════ -->
+<section id="roadmap">
+  <div class="roadmap">
+    <p class="section-label">Product Roadmap</p>
+    <h2 class="section-title">Building in the open</h2>
+    <p class="section-desc">
+      Incremental releases, each gated on the previous version's success metrics.
+    </p>
+    <div class="roadmap-track">
+      <div class="roadmap-item">
+        <div class="roadmap-dot">V1</div>
+        <div class="roadmap-body">
+          <div class="version-tag">Now — MVP Foundation</div>
+          <h4>Single-Job Cloud Simulation</h4>
+          <p>Python SDK, FDTD solver, HDF5 results, API key auth. First external user completes an end-to-end simulation in under 5 minutes.</p>
+        </div>
+      </div>
+      <div class="roadmap-item">
+        <div class="roadmap-dot">V2</div>
+        <div class="roadmap-body">
+          <div class="version-tag">Q2 2026 — Batch &amp; Sweep</div>
+          <h4>Parameter Sweeps</h4>
+          <p>Concurrent job queue, RCWA solver, usage dashboard. Sweep 50 wavelengths overnight unattended.</p>
+        </div>
+      </div>
+      <div class="roadmap-item">
+        <div class="roadmap-dot">V3</div>
+        <div class="roadmap-body">
+          <div class="version-tag">Q3 2026 — ML Datasets</div>
+          <h4>Large-Scale Generation</h4>
+          <p>Batch export in ML-ready formats, dataset versioning, S3 registry. Train surrogate models on MetoSim data.</p>
+        </div>
+      </div>
+      <div class="roadmap-item">
+        <div class="roadmap-dot">V4</div>
+        <div class="roadmap-body">
+          <div class="version-tag">Q4 2026 — Inverse Design</div>
+          <h4>AI-Guided Discovery</h4>
+          <p>Adjoint solver, topology optimization, AI-guided structure discovery. Export novel designs directly to MetoFab.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════ CTA ═══════ -->
+<section class="cta" id="get-started">
+  <div class="cta-orb"></div>
+  <h2>Ready to simulate?</h2>
+  <p>Get started with MetoSim in minutes. Install the SDK, configure your API key, and submit your first simulation.</p>
+  <div class="hero-actions">
+    <a href="#" class="btn-primary">Request Early Access</a>
+    <a href="https://github.com/metosim/metosim" class="btn-secondary">View on GitHub</a>
+  </div>
+</section>
+
+<footer>
+  <span>© 2026 Meto Platform — Dr. Abhishek Kumar &amp; Kishan</span>
+  <div class="footer-links">
+    <a href="#">Documentation</a>
+    <a href="#">GitHub</a>
+    <a href="#">API Reference</a>
+    <a href="#">Contact</a>
+  </div>
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,57 @@
+# ── Python ──
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+*.egg
+dist/
+build/
+.eggs/
+
+# ── Virtual environments ──
+.venv/
+venv/
+env/
+
+# ── IDE ──
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ── Environment ──
+.env
+.env.local
+.env.production
+
+# ── Testing ──
+.pytest_cache/
+htmlcov/
+.coverage
+coverage.xml
+
+# ── Type checking ──
+.mypy_cache/
+.dmypy.json
+
+# ── Build ──
+*.so
+*.o
+
+# ── OS ──
+.DS_Store
+Thumbs.db
+
+# ── Simulation outputs ──
+*.hdf5
+*.h5
+
+# ── Docker ──
+docker-compose.override.yml
+
+# ── Terraform ──
+.terraform/
+*.tfstate
+*.tfstate.backup
+*.tfvars

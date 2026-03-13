@@ -1,0 +1,72 @@
+name: CD
+
+on:
+  push:
+    tags: ["v*"]
+
+env:
+  REGISTRY: ghcr.io
+  API_IMAGE: ghcr.io/${{ github.repository }}/api
+  ENGINE_IMAGE: ghcr.io/${{ github.repository }}/engine
+
+jobs:
+  build-and-push:
+    name: Build & Push Docker Images
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build & push API image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: api/Dockerfile
+          push: true
+          tags: |
+            ${{ env.API_IMAGE }}:${{ github.ref_name }}
+            ${{ env.API_IMAGE }}:latest
+
+      - name: Build & push Engine image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: engine/Dockerfile
+          push: true
+          tags: |
+            ${{ env.ENGINE_IMAGE }}:${{ github.ref_name }}
+            ${{ env.ENGINE_IMAGE }}:latest
+
+  deploy-staging:
+    name: Deploy to Staging
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy API to Railway (staging)
+        run: echo "Deploy to staging — configure Railway CLI here"
+
+      - name: Smoke test
+        run: |
+          sleep 10
+          curl -sf https://staging-api.metosim.io/v1/health || exit 1
+
+  deploy-production:
+    name: Deploy to Production
+    needs: deploy-staging
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy API to Railway (production)
+        run: echo "Deploy to production — configure Railway CLI here"
