@@ -25,6 +25,7 @@ services:
         condition: service_healthy
     volumes:
       - ../api:/app/api  # Hot reload in dev
+    command: ["uvicorn", "api.app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
 
   # ── PostgreSQL (Job State) ──
   postgres:
@@ -59,25 +60,30 @@ services:
     image: minio/minio:latest
     ports:
       - "9000:9000"
-      - "9001:9001"  # Console
+      - "9001:9001"  # Console UI
     environment:
       MINIO_ROOT_USER: minioadmin
       MINIO_ROOT_PASSWORD: minioadmin
     command: server /data --console-address ":9001"
     volumes:
       - miniodata:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
 
   # ── Create default bucket on startup ──
   minio-init:
     image: minio/mc:latest
     depends_on:
-      - minio
+      minio:
+        condition: service_healthy
     entrypoint: >
       /bin/sh -c "
-        sleep 3;
         mc alias set local http://minio:9000 minioadmin minioadmin;
         mc mb local/metosim-results --ignore-existing;
-        echo 'Bucket ready';
+        echo '✓ Bucket metosim-results ready';
       "
 
 volumes:
