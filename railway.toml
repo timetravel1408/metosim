@@ -1,9 +1,10 @@
 [build]
 builder = "dockerfile"
-dockerfilePath = "api/Dockerfile"
+dockerfilePath = "landing/Dockerfile"
+watchPatterns = ["landing/**"]
 
 [deploy]
-healthcheckPath = "/v1/health"
-healthcheckTimeout = 10
+healthcheckPath = "/health"
+healthcheckTimeout = 5
 restartPolicyType = "on_failure"
 restartPolicyMaxRetries = 3

@@ -1,0 +1,13 @@
+# Railway config for the API service
+# Rename this to railway.toml when deploying the API instead of the landing page
+# Or use Railway's multi-service setup in the dashboard
+
+[build]
+builder = "dockerfile"
+dockerfilePath = "api/Dockerfile"
+
+[deploy]
+healthcheckPath = "/v1/health"
+healthcheckTimeout = 10
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 3
